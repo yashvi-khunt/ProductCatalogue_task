@@ -25,14 +25,18 @@ namespace ProductCatalogue.Controllers
         [Route("/api/login")]
         public IActionResult Login(User user)
         {
-            
-            var tokenString = authRepository.Login(user);
-            if(tokenString == null)
+            // Validate user input
+            if (!ModelState.IsValid)
             {
-                return NotFound("User Not Found");
+                return BadRequest(ModelState);
             }
-            return Ok(new { Token = tokenString, });
-            //return Ok(user);
+
+            var tokenString = authRepository.Login(user);
+            if (tokenString == null)
+            {
+                return NotFound("User Not Found or Invalid Credentials");
+            }
+            return Ok(new { Token = tokenString });
         }
         [HttpPost]
         [Route("/api/register")]

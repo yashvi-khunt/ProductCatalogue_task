@@ -9,7 +9,6 @@ const icons = {
 };
 
 function NavListComponent({ name, to }) {
-  //   const IconComponent = icons[name];
   return (
     <>
       <li>

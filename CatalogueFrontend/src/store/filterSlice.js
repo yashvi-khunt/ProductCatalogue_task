@@ -2,7 +2,8 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   tags: [],
-  range: 5000,
+  minPrice: 0,
+  maxPrice: 5000,
   text: "",
 };
 
@@ -20,13 +21,17 @@ const filterSlice = createSlice({
       );
     },
     changeRange: (state, action) => {
-      state.range = action.payload.range;
+      state.minPrice = action.payload.minPrice;
+      state.maxPrice = action.payload.maxPrice;
     },
     changeText: (state, action) => {
       state.text = action.payload;
     },
     clearFilters: (state) => {
-      (state.tags.length = 0), (state.range = 5000), (state.text = "");
+      state.tags = [];
+      state.minPrice = 0;
+      state.maxPrice = 5000;
+      state.text = "";
     },
   },
 });

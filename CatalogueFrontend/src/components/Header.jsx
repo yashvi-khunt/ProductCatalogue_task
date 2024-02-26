@@ -14,13 +14,13 @@ function Header() {
             </div>
           </div>
           <div
-            className="h-full w-[104px] bg-gray-500 
+            className="hidden md:block h-full w-[104px] bg-gray-500 
             absolute left-full top-0 rounded-r-full"
           ></div>
         </div>
         <img
           src="https://img.freepik.com/free-photo/shirt-mockup-concept-with-plain-clothing_23-2149448749.jpg"
-          className="h-full object-cover"
+          className="hidden md:block h-full object-cover"
         />
       </div>
 

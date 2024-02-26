@@ -21,25 +21,28 @@ namespace ProductCatalogue.Services
             this.logger = logger;
         }
 
-        public List<ProductListDTO> GetAllProductsForVisitors(int[] ids, int range, string? text)
+        public List<ProductListDTO> GetAllProductsForVisitors(int[] ids, decimal minPrice, decimal maxPrice, string? text)
         {
             try
             {
                 IQueryable<Product> productQuery = _context.Products
-                 .Include(p => p.Images)
-                 .Include(p => p.ProductTags)
-                     .ThenInclude(pt => pt.Tag);
+                    .Include(p => p.Images)
+                    .Include(p => p.ProductTags)
+                        .ThenInclude(pt => pt.Tag);
 
                 if (ids.Length > 0)
                 {
                     productQuery = productQuery
-                    .Where(p => p.ProductTags.Any(t => ids.Contains(t.TagId)));
+                        .Where(p => p.ProductTags.Any(t => ids.Contains(t.TagId)));
                 }
-                productQuery = productQuery.Where(p => p.Price >= 0 && p.Price <= range);
+
+                productQuery = productQuery.Where(p => p.Price >= minPrice && p.Price <= maxPrice);
+
                 if (!string.IsNullOrEmpty(text))
                 {
                     productQuery = productQuery.Where(p => p.Name.Contains(text));
                 }
+
                 var products = productQuery.ToList();
 
                 return ConvertProductList(products);
@@ -50,6 +53,7 @@ namespace ProductCatalogue.Services
                 throw;
             }
         }
+
 
         public List<AdminProductListDTO> GetAllProducts()
         {
@@ -87,13 +91,13 @@ namespace ProductCatalogue.Services
         {
             try
             {
-                var product = _context.Products.Include(p => p.ProductTags).Include(p => p.Images).FirstOrDefault(p => p.Id == id);
+                var product = _context.Products.Include(p => p.ProductTags).ThenInclude(pt => pt.Tag).Include(p => p.Images).FirstOrDefault(p => p.Id == id);
 
                 if (product == null) { return null; }
 
                 var productDTO = mapper.Map<ProductDTO>(product);
                 productDTO.Images = product.Images.Select(image => mapper.Map<ImageDTO>(image)).ToList();
-                productDTO.Tags = product.ProductTags.Select(pt => mapper.Map<TagDTO>(pt)).ToList();
+                productDTO.Tags = product.ProductTags.Select(pt => mapper.Map<TagDTO>(pt.Tag)).ToList();
                 return productDTO;
 
             }
@@ -117,12 +121,20 @@ namespace ProductCatalogue.Services
                     throw new ArgumentNullException(nameof(productDTO), "Product images are required.");
                 }
 
+                // Check for duplicate product name
+                if (_context.Products.Any(p => p.Name == productDTO.Name))
+                {
+                    throw new ArgumentException("Product with the same name already exists.");
+                }
+
                 var product = new Product
                 {
                     Name = productDTO.Name,
                     Description = productDTO.Description,
                     Price = productDTO.Price,
                 };
+
+                // Add product to database
                 try
                 {
                     _context.Products.Add(product);
@@ -133,6 +145,7 @@ namespace ProductCatalogue.Services
                     logger.LogError("Error occurred while creating Product. + ", ex);
                 }
 
+                // Add tags and images as before
                 foreach (var tag in productDTO.Tags)
                 {
                     var productTag = new Tags
@@ -147,7 +160,7 @@ namespace ProductCatalogue.Services
 
                 foreach (var image in productDTO.Images)
                 {
-                    var imageDTO = new Image
+                    var imageDTO = new Models.Image
                     {
                         ProductId = product.Id,
                         ImagePath = image.ImageFile,
@@ -167,10 +180,70 @@ namespace ProductCatalogue.Services
         }
 
 
-        public void UpdateProduct(ProductCreationDTO product)
+
+
+        public void UpdateProduct(int id, ProductCreationDTO productDTO)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var product = _context.Products.Include(p => p.ProductTags).Include(p => p.Images).FirstOrDefault(p => p.Id == id);
+                if (product == null)
+                {
+                    throw new ArgumentException("Product not found.");
+                }
+
+                // Check for duplicate product name if name is being changed
+                if (product.Name != productDTO.Name && _context.Products.Any(p => p.Name == productDTO.Name))
+                {
+                    throw new ArgumentException("Another product with the same name already exists.");
+                }
+
+                // Remove old product tag mappings
+                _context.ProductTags.RemoveRange(product.ProductTags);
+
+                // Remove old images
+                _context.Images.RemoveRange(product.Images);
+
+                // Update product properties
+                product.Name = productDTO.Name;
+                product.Description = productDTO.Description;
+                product.Price = productDTO.Price;
+
+                // Add new product tag mappings
+                foreach (var tagId in productDTO.Tags)
+                {
+                    var productTag = new Tags
+                    {
+                        ProductId = product.Id,
+                        TagId = tagId
+                    };
+                    _context.ProductTags.Add(productTag);
+                }
+
+                // Add new images
+                foreach (var image in productDTO.Images)
+                {
+                    var imageDTO = new Models.Image
+                    {
+                        ProductId = product.Id,
+                        ImagePath = image.ImageFile,
+                        IsPrimary = image.IsPrimary,
+                    };
+                    _context.Images.Add(imageDTO);
+                }
+
+                _context.SaveChanges();
+                logger.LogInformation("Product updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error occurred while updating product.");
+                throw;
+            }
         }
+
+
+
         public int DeleteProduct(int id)
         {
             try
@@ -192,7 +265,7 @@ namespace ProductCatalogue.Services
         }
 
         public List<ProductListDTO> WishListProducts(int[] ids)
-        {
+        { 
             try
             {
                 var products = _context.Products
@@ -233,9 +306,5 @@ namespace ProductCatalogue.Services
             return productDTOs;
         }
 
-        public void UpdateProduct(int id, ProductCreationDTO productDTO)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
+
+import { IoCloseCircle } from "react-icons/io5";
 
 function AddImage({
   isPrimary = false,
@@ -90,7 +92,7 @@ function AddImage({
                   }
                   type="file"
                   multiple={!isPrimary}
-                  className="sr-only"
+                  className="sr-only border p-2"
                   onChange={handleImageChange}
                 />
               </label>
@@ -102,35 +104,26 @@ function AddImage({
           </div>
         </div>
       </div>
-      <div className="mt-4 flex justify-center gap-5">
-        {fields.map((item, index) => (
-          <div key={index} className="relative">
-            {isPrimary && fields.length === 1 && (
+      <div className="col-span-full">
+        <div className="mt-4 flex flex-wrap lg:justify-start justify-center gap-5">
+          {fields.map((item, index) => (
+            <div key={index} className="relative">
               <button
                 type="button"
-                className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full"
-                onClick={() => handleRemoveImage(index)}
+                className="absolute"
+                style={{ left: "88%", bottom: "95%" }}
+                onClick={() => handleRemoveImage(item.id, index)}
               >
-                X
+                <IoCloseCircle fill="gray" color="white" size={25} />
               </button>
-            )}
-            <img
-              src={item.image}
-              alt={`Image ${index + 1}`}
-              className="w-min object-contain mx-2"
-            />
-            {!isPrimary && (
-              // Display a remove button for secondary images
-              <button
-                type="button"
-                className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full"
-                onClick={() => handleRemoveImage(index)}
-              >
-                X
-              </button>
-            )}
-          </div>
-        ))}
+              <img
+                src={item.image}
+                alt={`Image ${index + 1}`}
+                className="object-contain lg:mx-2 lg:w-40 w-32"
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );

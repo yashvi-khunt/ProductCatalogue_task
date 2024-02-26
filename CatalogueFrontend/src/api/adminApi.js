@@ -12,12 +12,12 @@ const adminApi = {
       return await response.json();
     } catch (error) {
       console.error(error);
-      return [];
+      return { success: false, error: "Failed to fetch product list" };
     }
   },
 
   deleteProduct: async (productId) => {
-    const query = `${config.baseUrl}/products?id=${productId}`;
+    const query = `${config.baseUrl}/products/${productId}`;
     try {
       const response = await fetch(query, {
         method: "DELETE",
@@ -25,10 +25,10 @@ const adminApi = {
       if (!response.ok) {
         throw new Error("Failed to delete product");
       }
-      return true;
+      return { success: true };
     } catch (error) {
       console.error(error);
-      return false;
+      return { success: false, error: "Failed to delete product" };
     }
   },
 
@@ -45,15 +45,15 @@ const adminApi = {
       if (!response.ok) {
         throw new Error("Failed to add product");
       }
-      return true; // Or you can return response.json() if necessary
+      return { success: true };
     } catch (error) {
       console.error(error);
-      return false;
+      return { success: false, error: "Failed to add product" };
     }
   },
 
   updateProduct: async (id, data) => {
-    const query = `${config.baseUrl}/tags/${id}`;
+    const query = `${config.baseUrl}/products/${id}`;
     try {
       const response = await fetch(query, {
         method: "PUT",
@@ -65,13 +65,12 @@ const adminApi = {
       if (!response.ok) {
         throw new Error("Failed to update product");
       }
-      return true; // Or you can return response.json() if necessary
+      return { success: true };
     } catch (error) {
       console.error(error);
-      return false;
+      return { success: false, error: "Failed to update product" };
     }
   },
-
   addTag: async (tag) => {
     const query = `${config.baseUrl}/tags`;
     try {
@@ -85,7 +84,7 @@ const adminApi = {
       if (!response.ok) {
         throw new Error("Failed to add product");
       }
-      return true;
+      return response.json();
     } catch (error) {
       console.error(error);
       return false;
@@ -127,7 +126,7 @@ const adminApi = {
   },
 
   deleteTag: async (id) => {
-    const query = `${config.baseUrl}/tag/${id}?id=${id}`;
+    const query = `${config.baseUrl}/tags/${id}`;
     try {
       const response = await fetch(query, {
         method: "DELETE",

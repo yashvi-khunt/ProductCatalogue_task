@@ -21,8 +21,10 @@ function ListComponent({ onClose }) {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const products = await apiService.fetchWishedProducts(wishedProductIds);
-      setProducts(products);
+      const { data } = await apiService.fetchWishedProducts(wishedProductIds);
+      if (data) {
+        setProducts(data);
+      }
     };
     fetchProducts();
   }, [wishedProductIds]);

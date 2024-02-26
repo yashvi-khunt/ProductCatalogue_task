@@ -1,8 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import { TbShoppingCartHeart } from "react-icons/tb";
-import { HiFilter } from "react-icons/hi";
-import apiService from "../api/apiService";
-import { ListComponent } from "./index";
+import React from "react";
+import { IoClose } from "react-icons/io5";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addFilter,
@@ -13,32 +10,9 @@ import {
 } from "../store/filterSlice";
 import RangeSlider from "rsuite/RangeSlider";
 import "rsuite/dist/rsuite.css";
-import FilterComponent from "./FilterComponent";
 
-function TagsList({ children }) {
-  const [tags, setTags] = useState([]);
+function FilterComponent({ onClose, tags }) {
   const dispatch = useDispatch();
-
-  const [showWishlist, setShowWishlist] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-
-  const toggleWishlist = () => {
-    setShowWishlist(!showWishlist);
-  };
-
-  const toggleFilters = () => {
-    setShowFilters(!showFilters);
-  };
-  const tagListRef = useRef(null);
-  const productListRef = useRef(null);
-
-  const handleSearch = (text) => {
-    dispatch(changeText(text));
-  };
-
-  const handleClear = () => {
-    dispatch(clearFilters());
-  };
 
   const filterTags = useSelector((state) => state.filter.tags);
   const filterMinPrice = useSelector((state) => state.filter.minPrice);
@@ -56,65 +30,32 @@ function TagsList({ children }) {
     dispatch(changeRange({ minPrice: values[0], maxPrice: values[1] }));
   };
 
-  useEffect(() => {
-    const fetchTags = async () => {
-      const tags = await apiService.fetchTags();
-      console.log(tags);
-      setTags(tags);
-    };
-    fetchTags();
-  }, []);
+  const handleSearch = (text) => {
+    dispatch(changeText(text));
+  };
 
-  useEffect(() => {
-    // Check if the height of tag list is greater than product list
-    const tagListHeight = tagListRef.current.clientHeight;
-    const productListHeight = productListRef.current.clientHeight;
-    if (tagListHeight > productListHeight) {
-      // Add scroll to tag list
-      tagListRef.current.style.overflowY = "auto";
-    } else {
-      // Remove scroll from tag list
-      tagListRef.current.style.overflowY = "unset";
-    }
-  }, [tags]);
+  const handleClear = () => {
+    dispatch(clearFilters());
+  };
 
   return (
-    <>
-      <div className="flex items-baseline justify-between border-b border-gray-200 pb-6 pt-6">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-          New Arrivals
-        </h1>
-
-        <div className="flex items-center">
-          <div className="flex text-left">
+    <div className="absolute inset-0 overflow-hidden bg-gray-500 bg-opacity-75">
+      <div className="fixed inset-y-0 left-0 flex max-w-full pr-10">
+        <div className="flex h-full flex-col bg-white shadow-xl overflow-y-scroll min-w-80">
+          <div className="flex items-start justify-between px-4 py-6 sm:px-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">Filters</h2>
             <button
               type="button"
-              className=" p-2 text-gray-400 hover:text-gray-500 "
-              onClick={toggleWishlist}
+              className="text-gray-400 hover:text-gray-500"
+              onClick={onClose}
             >
-              <span className="sr-only">View WishList</span>
-              <TbShoppingCartHeart size={25} />
-            </button>
-            <button
-              type="button"
-              className=" p-2 text-gray-400 hover:text-gray-500 lg:hidden"
-              onClick={toggleFilters}
-            >
-              <span className="sr-only">Tags</span>
-              <HiFilter size={25} />
+              <span className="sr-only">Close panel</span>
+              <IoClose />
             </button>
           </div>
-        </div>
-      </div>
 
-      <section className="py-6">
-        <div className="grid grid-cols-1 gap-x-8 gap-y-10 lg:grid-cols-4">
-          {/* tags */}
-          <div
-            ref={tagListRef}
-            className="hidden h-max lg:flex flex-col w-full items-center justify-between bg-white text-sm text-gray-400"
-          >
-            <h2 className="flex items-center border-b border-gray-200 py-3 w-full font-medium text-lg justify-between">
+          <div className="w-full border-b border-gray-200">
+            <h2 className="flex items-center py-3 w-3/4 mx-auto font-medium text-lg justify-between">
               Tags
               <button
                 className="text-sm font-normal text-black hover:underline"
@@ -123,7 +64,9 @@ function TagsList({ children }) {
                 Clear
               </button>
             </h2>
-            <div className="flex items-center border-b border-gray-200 py-3 w-full">
+          </div>
+          <div className="w-full border-b border-gray-200">
+            <div className="flex items-center py-3 w-4/5 mx-auto">
               <input
                 type="text"
                 className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 pl-2"
@@ -133,10 +76,13 @@ function TagsList({ children }) {
                 }}
               />
             </div>
-            {tags.map((tag) => (
+          </div>
+
+          {tags.map((tag) => (
+            <div className="w-full border-b border-gray-200">
               <div
                 key={tag.id}
-                className="flex items-center border-b border-gray-200 py-3 w-full"
+                className="flex mx-auto items-center py-3 w-4/5"
               >
                 <input
                   id={tag.id}
@@ -154,9 +100,11 @@ function TagsList({ children }) {
                   {tag.name}
                 </label>
               </div>
-            ))}
+            </div>
+          ))}
 
-            <div className="flex flex-col justify-start items-center border-b border-gray-200 py-3 w-full">
+          <div className="w-full border-b border-gray-200">
+            <div className="flex flex-col justify-start items-center 0 py-3 w-4/5 mx-auto">
               <div>
                 <label
                   htmlFor="filter-color-0"
@@ -207,18 +155,10 @@ function TagsList({ children }) {
               </div>
             </div>
           </div>
-          <div
-            ref={productListRef}
-            className="lg:col-span-3 border-dashed border-2 rounded-lg"
-          >
-            {children}
-          </div>
         </div>
-      </section>
-      {showWishlist && <ListComponent onClose={toggleWishlist} />}
-      {showFilters && <FilterComponent tags={tags} onClose={toggleFilters} />}
-    </>
+      </div>
+    </div>
   );
 }
 
-export default TagsList;
+export default FilterComponent;

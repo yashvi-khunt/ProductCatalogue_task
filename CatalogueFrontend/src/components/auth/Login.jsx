@@ -5,6 +5,22 @@ import { login as authLogin } from "../../store/authSlice";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import apiService from "../../api/apiService";
+import Swal from "sweetalert2";
+
+const toastMixin = Swal.mixin({
+  toast: true,
+  icon: "success",
+  title: "General Title",
+  animation: false,
+  position: "top-right",
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true,
+  didOpen: (toast) => {
+    toast.addEventListener("mouseenter", Swal.stopTimer);
+    toast.addEventListener("mouseleave", Swal.resumeTimer);
+  },
+});
 
 function Login() {
   const dispatch = useDispatch();
@@ -17,16 +33,20 @@ function Login() {
   } = useForm();
 
   const login = async (data) => {
-    console.log(data);
     try {
       const userToken = await apiService.login(data);
-      console.log(userToken);
-      if (userToken) {
+      if (!userToken || userToken.error) {
+        setError("Invalid username or password");
+      } else {
         dispatch(authLogin(userToken));
-        console.log("navigate");
+        toastMixin.fire({
+          animation: false,
+          title: "Signed in Successfully",
+        });
         navigate("/admin/product");
       }
     } catch (error) {
+      console.log(error.message);
       setError(error.message);
     }
   };
@@ -42,7 +62,7 @@ function Login() {
                 <form className="space-y-6" onSubmit={handleSubmit(login)}>
                   <div>
                     <Input
-                      label="UserName"
+                      label="User Name"
                       id="username"
                       name="username"
                       type="text"
@@ -56,7 +76,7 @@ function Login() {
                             "Enter a valid username",
                         },
                       })}
-                      error={errors.username?.message}
+                      error={errors.username?.message || error}
                     />
                   </div>
                   <Input
@@ -75,7 +95,7 @@ function Login() {
                           "Password should be 8-16 characters and must contain a lowercase,an upper case and special character",
                       },
                     })}
-                    error={errors.password?.message}
+                    error={errors.password?.message || error}
                   />
 
                   <div>

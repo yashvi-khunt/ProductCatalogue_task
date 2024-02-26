@@ -47,11 +47,12 @@ namespace ProductCatalogue.Controllers
         [HttpPost]
         public ActionResult<TagDTO> AddTag(TagDTO tagDTO)
         {
+            
             var tag = new Tag { Name = tagDTO.Name };
             _context.Tags.Add(tag);
             _context.SaveChanges();
             tagDTO.Id = tag.Id;
-            return CreatedAtAction(nameof(GetTagById), new { id = tag.Id }, tagDTO);
+            return tagDTO;
         }
 
         [HttpPut("{id}")]

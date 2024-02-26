@@ -6,21 +6,26 @@ import { useSelector } from "react-redux";
 function ProductList() {
   const [products, setProducts] = useState([]);
   const filterTags = useSelector((state) => state.filter.tags);
-  const filterRange = useSelector((state) => state.filter.range);
+  const filterMinPrice = useSelector((state) => state.filter.minPrice);
+  const filterMaxPrice = useSelector((state) => state.filter.maxPrice);
   const filterText = useSelector((state) => state.filter.text);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const products = await apiService.fetchProducts(
+      const { success, data } = await apiService.fetchProducts(
         filterTags,
-        filterRange,
+        filterMinPrice,
+        filterMaxPrice,
         filterText
       );
-      console.log(products);
-      setProducts(products);
+      if (success) {
+        setProducts(data);
+      } else {
+        setProducts([]);
+      }
     };
     fetchProducts();
-  }, [filterTags, filterRange, filterText]);
+  }, [filterTags, filterMaxPrice, filterMinPrice, filterText]);
 
   return (
     <div className="px-8">
@@ -34,7 +39,9 @@ function ProductList() {
               <ProductCard key={index} product={product} />
             ))
           ) : (
-            <label>No Products Found</label>
+            <div className="flex justify-center items-center">
+              No Products Found
+            </div>
           )}
         </div>
       </TagsList>

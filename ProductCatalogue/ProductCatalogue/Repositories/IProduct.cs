@@ -5,7 +5,7 @@ namespace ProductCatalogue.Repositories
 {
     public interface IProduct
     {
-        List<ProductListDTO> GetAllProductsForVisitors(int[] tagIds,int range,string? text);
+        List<ProductListDTO> GetAllProductsForVisitors(int[] tagIds,decimal min,decimal max,string? text);
         List<ProductListDTO> WishListProducts(int[] ids);
         List<AdminProductListDTO> GetAllProducts();
        

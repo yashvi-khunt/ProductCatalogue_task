@@ -8,7 +8,7 @@ namespace ProductCatalogue.Helper
     {
         public MappingProfile() {
             CreateMap<Product, ProductListDTO>().ReverseMap();
-            CreateMap<Image, ImageDTO>().ReverseMap();
+            CreateMap<Models.Image, ImageDTO>().ReverseMap();
             CreateMap<Tags, TagDTO>().ReverseMap();
             CreateMap<Product, AdminProductListDTO>().ReverseMap();
             CreateMap<Product, ProductDTO>()
@@ -17,8 +17,7 @@ namespace ProductCatalogue.Helper
             
 
             CreateMap<ProductCreationDTO, Product>().ReverseMap();
-
-           CreateMap<Tag, TagDTO>().ReverseMap();
+            CreateMap<Tag, TagDTO>().ReverseMap();  
         }
     }
 }

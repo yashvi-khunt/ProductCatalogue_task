@@ -1,11 +1,8 @@
-import React, { useState } from "react";
-import { NavListComponent } from "./index";
-import { Outlet } from "react-router-dom";
-import { IoPersonCircleOutline, IoMenuOutline } from "react-icons/io5";
+import React from "react";
 import { logout } from "../../store/authSlice";
 import { useDispatch } from "react-redux";
-import Swal from "sweetalert2";
-
+import { IoClose, IoPersonCircleOutline } from "react-icons/io5";
+import NavListComponent from "./NavListComponent";
 const navItems = [
   {
     name: "Product",
@@ -17,38 +14,30 @@ const navItems = [
   },
 ];
 
-const toastMixin = Swal.mixin({
-  toast: true,
-  icon: "success",
-  title: "General Title",
-  animation: false,
-  position: "top-right",
-  showConfirmButton: false,
-  timer: 3000,
-  timerProgressBar: true,
-  didOpen: (toast) => {
-    toast.addEventListener("mouseenter", Swal.stopTimer);
-    toast.addEventListener("mouseleave", Swal.resumeTimer);
-  },
-});
-
-function Admin() {
+function NavToggle({ onClose }) {
   const dispatch = useDispatch();
   const handleLogout = () => {
     dispatch(logout());
-    toastMixin.fire({
-      animation: false,
-      title: "Logged out Successfully",
-    });
   };
 
   return (
-    <>
-      <div className=" flex border-b flex-auto flex-shrink-0 antialiased bg-gray-50 text-gray-800">
-        <div className="hidden lg:flex flex-col  w-64 bg-white  border-r">
-          <div className="flex items-center justify-center h-14 border-b">
-            <div>Product Catalogue</div>
+    <div className="absolute inset-0 overflow-hidden bg-gray-500 bg-opacity-75">
+      <div className="fixed inset-y-0 left-0 flex max-w-full pr-10">
+        <div className="flex h-full flex-col bg-white shadow-xl overflow-y-scroll min-w-80">
+          <div className="flex items-start justify-between px-4 py-6 sm:px-6 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">
+              Product Catalogue
+            </h2>
+            <button
+              type="button"
+              className="text-gray-400 hover:text-gray-500"
+              onClick={onClose}
+            >
+              <span className="sr-only">Close panel</span>
+              <IoClose />
+            </button>
           </div>
+
           <div className="overflow-y-auto overflow-x-hidden flex-grow">
             <ul className="flex flex-col py-4 space-y-1">
               {navItems.map((item) => (
@@ -75,12 +64,9 @@ function Admin() {
             </ul>
           </div>
         </div>
-        <div className="w-full">
-          <Outlet />
-        </div>
       </div>
-    </>
+    </div>
   );
 }
 
-export default Admin;
+export default NavToggle;

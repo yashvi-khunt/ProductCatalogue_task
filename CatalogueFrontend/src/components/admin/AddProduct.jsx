@@ -1,41 +1,67 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import AddImage from "./AddImage";
 import apiService from "../../api/apiService";
 import adminApi from "../../api/adminApi";
-import Select from "react-select";
+import CreatableSelect from "react-select/creatable";
 import { useNavigate, useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import Swal from "sweetalert2";
 
 const AddProduct = () => {
   const [tags, setTags] = useState([]);
   const navigate = useNavigate();
-  const { register, handleSubmit, control, setValue, reset } = useForm();
-  const dispatch = useDispatch();
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm();
   const { id } = useParams();
+  const [selectedValues, setSelectedValues] = useState([]);
 
   const [productImages, setProductImages] = useState({
     primaryImages: [],
     secondaryImages: [],
   });
 
+  const [productNameError, setProductNameError] = useState("");
+  const [priceError, setPriceError] = useState("");
+  const [descriptionError, setDescriptionError] = useState("");
+  const [tagsError, setTagsError] = useState("");
+  const [primaryImageError, setPrimaryImageError] = useState("");
+  const [secondaryImageError, setSecondaryImageError] = useState("");
+
+  const handleAddTag = async (inputValue) => {
+    try {
+      // Make your API call here to create a new tag
+      const newTag = await adminApi.addTag({ tagName: inputValue });
+      // Update tags state with the newly created tag
+      setTags([...tags, newTag]);
+      // Return the newly created option to be selected
+      return { label: newTag.name, value: newTag.id };
+    } catch (error) {
+      console.error("Error creating tag:", error);
+    }
+  };
   useEffect(() => {
     const fetchProductDetails = async () => {
       if (id) {
         try {
-          const product = await apiService.getProductById(id);
-          console.log(product);
+          const { data } = await apiService.getProductById(id);
+          const product = data;
+          console.log("testing", product);
           setValue("productName", product.name);
           setValue("description", product.description);
+          const productTags = product.tags.map((tag) => ({
+            value: tag.id,
+            label: tag.name || "",
+          }));
+          setSelectedValues(productTags);
+          setValue("tags", productTags);
 
-          if (tags && tags.length > 0) {
-            setValue(
-              "tags",
-              product.tags.map((tag) => tag.id)
-            );
-          }
-          setValue("price", product.price); // Set the price value
-          // Set product images
+          setValue("price", product.price);
           if (product.images && product.images.length > 0) {
             const primaryImages = product.images.filter((img) => img.isPrimary);
             const secondaryImages = product.images.filter(
@@ -52,47 +78,60 @@ const AddProduct = () => {
       }
     };
     fetchProductDetails();
-  }, [id, setValue]);
+  }, [id]);
+
+  useEffect(() => {
+    console.log(selectedValues);
+  }, [selectedValues]);
 
   useEffect(() => {
     const fetchTags = async () => {
       const tags = await apiService.fetchTags();
+      console.log(tags);
       setTags(tags);
     };
     fetchTags();
   }, []);
 
   const handleTagsChange = (selectedTags) => {
-    const selectedTagIds = selectedTags.map((tag) => tag.value);
+    console.log(selectedValues);
 
-    setValue("tags", selectedTagIds);
+    setSelectedValues(selectedTags);
+    setValue("tags", selectedTags);
   };
-
+  console.log(selectedValues);
   const postForm = async (data) => {
     if (id) {
       try {
         const result = await adminApi.updateProduct(id, data);
         if (result) {
-          alert("Product updated successfully");
-          navigate("/admin/product");
+          Swal.fire(
+            "Success!",
+            "Product updated successfully.",
+            "success"
+          ).then(() => {
+            navigate("/admin/product");
+          });
         } else {
-          alert("Something went wrong");
+          Swal.fire("Error!", "Something went wrong.", "error");
         }
       } catch (error) {
-        alert("Error updating product:", error);
+        Swal.fire("Error!", `Error updating product: ${error}`, "error");
       }
     } else {
-      console.log(data);
       try {
         const result = await adminApi.addProduct(data);
         if (result) {
-          alert("Product added successfully");
-          navigate("/admin/product");
+          Swal.fire("Success!", "Product added successfully.", "success").then(
+            () => {
+              navigate("/admin/product");
+            }
+          );
         } else {
-          alert("Something went wrong");
+          Swal.fire("Error!", "Something went wrong.", "error");
         }
       } catch (error) {
-        alert("Error adding product:", error);
+        Swal.fire("Error!", `Error adding product: ${error}`, "error");
       }
     }
   };
@@ -102,26 +141,98 @@ const AddProduct = () => {
     navigate("/admin/product");
   };
 
-  const onSubmit = (data) => {
-    const productData = {
-      Name: data.productName,
-      Description: data.description,
-      Tags: data.tags,
-      Images: [
-        { ImageFile: data.primaryImages[0].image, IsPrimary: true },
-        ...data.secondaryImages.map((image) => ({
-          ImageFile: image.image,
-          IsPrimary: false,
-        })),
-      ],
-      Price: data.price,
-    };
+  // const onSubmit = (data) => {
+  //   const productData = {
+  //     Name: data.productName,
+  //     Description: data.description,
+  //     Tags: data.tags.map((tag) => tag.value),
+  //     Images: [
+  //       { ImageFile: data.primaryImages[0].image, IsPrimary: true },
+  //       ...data.secondaryImages.map((image) => ({
+  //         ImageFile: image.image,
+  //         IsPrimary: false,
+  //       })),
+  //     ],
+  //     Price: data.price,
+  //   };
 
-    postForm(productData);
+  //   postForm(productData);
+  // };
+  const onSubmit = (data) => {
+    let hasError = false;
+
+    // Validate Product Name
+    if (!data.productName) {
+      setProductNameError("Product name is required");
+      hasError = true;
+    } else {
+      setProductNameError("");
+    }
+
+    // Validate Price
+    if (!data.price) {
+      setPriceError("Price is required");
+      hasError = true;
+    } else if (data.price <= 0 || data.price > 5000) {
+      setPriceError("Price must be a positive number less than 5000");
+      hasError = true;
+    } else {
+      setPriceError("");
+    }
+
+    // Validate Description
+    if (!data.description) {
+      setDescriptionError("Description is required");
+      hasError = true;
+    } else {
+      setDescriptionError("");
+    }
+
+    // Validate Tags
+    if (!data.tags || data.tags.length === 0) {
+      setTagsError("Please select at least one tag");
+      hasError = true;
+    } else {
+      setTagsError("");
+    }
+
+    // Validate Primary Image
+    if (!data.primaryImages || data.primaryImages.length === 0) {
+      setPrimaryImageError("Please upload a primary image");
+      hasError = true;
+    } else {
+      setPrimaryImageError("");
+    }
+
+    // Validate Secondary Images
+    if (!data.secondaryImages || data.secondaryImages.length === 0) {
+      setSecondaryImageError("Please upload at least one secondary image");
+      hasError = true;
+    } else {
+      setSecondaryImageError("");
+    }
+
+    if (!hasError) {
+      const productData = {
+        Name: data.productName,
+        Description: data.description,
+        Tags: data.tags.map((tag) => tag.value),
+        Images: [
+          { ImageFile: data.primaryImages[0].image, IsPrimary: true },
+          ...data.secondaryImages.map((image) => ({
+            ImageFile: image.image,
+            IsPrimary: false,
+          })),
+        ],
+        Price: data.price,
+      };
+
+      postForm(productData);
+    }
   };
 
   return (
-    <div className="px-52 py-10">
+    <div className="lg:px-52 px-5 py-10">
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="space-y-12">
           <div className="border-b border-gray-900/10 pb-12">
@@ -133,7 +244,7 @@ const AddProduct = () => {
             </p>
 
             <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-              <div className="sm:col-span-4">
+              <div className="col-span-full lg:col-span-3">
                 <label
                   htmlFor="productName"
                   className="block text-sm font-medium leading-6 text-gray-900"
@@ -146,9 +257,46 @@ const AddProduct = () => {
                     id="productName"
                     name="productName"
                     autoComplete="productName"
-                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 pl-2"
-                    {...register("productName")}
+                    className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 pl-2`}
+                    {...register("productName", {
+                      required: true,
+                      pattern: /^[a-zA-Z0-9_ ]*$/,
+                    })}
                   />
+                  {productNameError && (
+                    <span className="text-red-500 text-sm">
+                      {productNameError}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="col-span-full lg:col-span-3">
+                <label
+                  htmlFor="price"
+                  className="block text-sm font-medium leading-6 text-gray-900"
+                >
+                  Price
+                </label>
+                <div className="mt-2">
+                  <input
+                    type="number"
+                    id="price"
+                    name="price"
+                    className={`pl-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                      errors.price ? "border-red-500" : ""
+                    }`}
+                    {...register("price", {
+                      required: true,
+                      min: 0,
+                      max: 5000,
+                    })}
+                  />
+                  {priceError && (
+                    <span className="col-span-full text-red-500 text-sm">
+                      {priceError}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -164,10 +312,17 @@ const AddProduct = () => {
                     id="description"
                     name="description"
                     rows={3}
-                    className="pl-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                    className={`pl-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                      errors.description ? "border-red-500" : ""
+                    }`}
                     defaultValue=""
-                    {...register("description")}
+                    {...register("description", { required: true })}
                   />
+                  {descriptionError && (
+                    <span className="col-span-full text-red-500 text-sm">
+                      {descriptionError}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -180,39 +335,36 @@ const AddProduct = () => {
                     Tags
                   </label>
                   <div className="mt-2">
-                    <Select
-                      id="tags"
+                    <Controller
                       name="tags"
-                      options={tags.map((tag) => ({
-                        value: tag.id,
-                        label: tag.name || "",
-                      }))}
-                      isMulti
-                      classNamePrefix="react-select"
-                      placeholder="Select tags..."
-                      onChange={handleTagsChange} //
+                      control={control}
+                      defaultValue={selectedValues}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <CreatableSelect
+                          {...field}
+                          options={tags.map((tag) => ({
+                            value: tag.id,
+                            label: tag.name,
+                          }))}
+                          isMulti
+                          classNamePrefix="react-select"
+                          placeholder="Select tags..."
+                          onChange={handleTagsChange}
+                          onCreateOption={handleAddTag}
+                          isClearable={true}
+                          isCreatable={true}
+                        />
+                      )}
                     />
+                    {tagsError && (
+                      <span className="col-span-full text-red-500 text-sm">
+                        {tagsError}
+                      </span>
+                    )}
                   </div>
                 </div>
               )}
-
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="price"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Price
-                </label>
-                <div className="mt-2">
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    className="pl-2 block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                    {...register("price")}
-                  />
-                </div>
-              </div>
 
               <AddImage
                 isPrimary
@@ -221,17 +373,26 @@ const AddProduct = () => {
                 setValue={setValue}
                 productImages={productImages}
               />
+              {primaryImageError && (
+                <span className="col-span-full text-red-500 text-sm">
+                  {primaryImageError}
+                </span>
+              )}
               <AddImage
                 control={control}
                 defaultImages={productImages.secondaryImages}
                 setValue={setValue}
                 productImages={productImages}
               />
+              {secondaryImageError && (
+                <span className="col-span-full text-red-500 text-sm w-full">
+                  {secondaryImageError}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Add other images */}
         <div className="mt-6 flex items-center justify-end gap-x-6">
           <button
             type="button"

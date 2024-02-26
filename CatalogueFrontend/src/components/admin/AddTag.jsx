@@ -6,7 +6,12 @@ import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
 function AddTag() {
-  const { register, handleSubmit, reset } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm(); // Destructuring errors from formState
   const { id } = useParams();
   const [currtag, setCurrTag] = useState("");
   const navigate = useNavigate();
@@ -14,9 +19,7 @@ function AddTag() {
   useEffect(() => {
     const fetchTag = async () => {
       const tag = await adminApi.getTagById(id);
-
       setCurrTag(tag);
-      console.log(tag);
       reset(tag);
     };
     fetchTag();
@@ -32,15 +35,16 @@ function AddTag() {
         alert("Something went wrong while updating tag.");
       }
     } else {
-      console.log(data);
       const res = await adminApi.addTag(data);
       if (res) {
-        alert("Product added successfully");
+        alert("Tag added successfully");
+        navigate("/admin/tag");
       } else {
         alert("Something went wrong.");
       }
     }
   };
+
   const handleClear = () => {
     reset();
     navigate("/admin/tag");
@@ -73,10 +77,21 @@ function AddTag() {
                       id="tagName"
                       name="tagName"
                       autoComplete="tagName"
-                      className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                      {...register("tagName")}
+                      className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                        errors.tagName ? "border-red-500" : ""
+                      }`}
+                      {...register("tagName", {
+                        required: true,
+                        pattern: /^[a-zA-Z0-9_ ]*$/, // Regex pattern for alphabets, numbers, and underscores
+                      })}
                       defaultValue={currtag.name}
                     />
+                    {errors.tagName && (
+                      <span className="text-red-500 text-sm">
+                        Tag name is required and should only contain alphabets,
+                        numbers, and underscores
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
