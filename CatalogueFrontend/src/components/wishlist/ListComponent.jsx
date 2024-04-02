@@ -39,7 +39,7 @@ function ListComponent({ onClose }) {
 
   useEffect(() => {
     console.log(products, wishedProductIds);
-  }, [products]);
+  }, [products, wishedProductIds]);
 
   return (
     <>
